@@ -75,6 +75,39 @@ class PushPullAnalysis:
         self.pattern = pattern          # Pattern unitario di forze (solo fuori terra, si esclude il pian terreno)
 
 
+# ---------------------------------------------------------------------------------------------------------------------------
+# Importo DATA da Revit
+# ---------------------------------------------------------------------------------------------------------------------------
+
+import json
+
+# Dati Telaio
+file = open('ModelloOpenSees/Telaio.json')
+data = json.load(file)
+file.close
+
+frame = Frame(data['span'], data['storey'], round(data['n']), data['m'], data['r'], data['mass'], data['Heff'])
+
+# Sezioni
+sections_data = data['sections']
+sections = []
+
+for data in sections_data:
+    section =  dict(zip(data['Keys'], data['Values']))
+    element = Section(section['Section'][1], section['Section'][0], section['Material'], section['S'][0], section['S'][1], section['Strain'], section['Stress'], section['S'][2], section['S'][3])
+    sections.append(element)
+
+# COLONNE
+column = sections[0]
+
+# TRAVI
+beams = [Section(0,0,0,0,0,0)]    # Piano terra non ha travi
+
+for j in range(1, frame.m + 1):    # Per il momento tutte travi uguali
+
+    beams.append(sections[j])
+
+
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ /
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -82,19 +115,6 @@ class PushPullAnalysis:
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ /
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-# TELAIO
-frame = Frame(11, 4, 2, 1, 2, [0, 140.8, 140.8], 4)
-
-# COLONNA
-column = Section(0.6, 0.4, 33346000, 122.9, 109766.68, [-0.0336 ,-0.00112 ,-0.0001 ,0.0 ,0.0001 ,0.00112 ,0.0336 ], [-100.8 ,-96.7 ,-70.4 ,0.0 ,70.4 ,96.7 ,100.8 ], 0, 452.99)
-
-# TRAVI
-beams = [Section(0,0,0,0,0,0)]    # Piano terra non ha travi
-
-for j in range(frame.m + 1):    # Per il momento tutte travi uguali
-
-    beams.append(Section(0.6, 0.4, 33346000, 57.8, 63211.97, [-0.0237 ,-0.000915 ,-0.0001 ,0.0 ,0.0001 ,0.000915 ,0.0237 ], [-127.1 ,-97.9 ,-36.0 ,0.0 ,36.0 ,97.9 ,127.1 ], 0, 740.86))
 
 
 # TRANSFORMATION
@@ -667,124 +687,144 @@ except:
 
     print('Errore: il numero di masse di piano definite non corrisponde al numero di piani')
 
-# # -------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# # \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ /
-# # -------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# # ANALISI PUSH-PULL
-# # -------------------------------------------------------------------------------------------------------------------------------------------------------------------
-# # \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ /
-# # -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ /
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# ANALISI PUSH-PULL
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ /
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-# # ---------------------------------------------------------------------------------------------------------------------------
-# # Definisco le Push-Pull
-# # ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+# Importo l'analisi
+# ---------------------------------------------------------------------------------------------------------------------------
 
-# push_pull = PushPullAnalysis([0.1, -0.1, 0.15, -0.15, 0.2, -0.2, 0.25, -0.25, 0.25], 0.001, inelasticShape(frame))
+file = open('ModelloOpenSees/Pushover.json')
+data = json.load(file)
+file.close
 
-# # Setto i recorders
-# ops.recorder('Node', '-file', 'Pushover\Pushover_Base_Reactions.out', '-time', '-node', 0, 1, 2, '-dof', 1, 'reaction')     # Da Automatizzare o Base reaction
-# ops.recorder('Node', '-file', 'Pushover\Pushover_Storey_Drift.out', '-time', '-node', controlNode(), '-dof', 1, 'disp')
+push_pull = PushPullAnalysis(data['points'],data['step'],inelasticShape(frame))
 
-# # ---------------------------------------------------------------------------------------------------------------------------
-# # Inizio la definizione della prima Push
-# # ---------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------------------------
+# Definisco le Push-Pull
+# ---------------------------------------------------------------------------------------------------------------------------
 
-# print(f'-o-o-o- Analisi Push-Pull 1/{len(push_pull.points)} -o-o-o-')
+if run_pushover:
 
-# # Parte il cronometro
-# tStart = round(time.time() * 1000)
+    # Setto i recorders
+    base_nodes = ''
 
-# # Definisco i Parametri 
-# direzione = push_pull.points[0]/abs(push_pull.points[0])
-# spostamento = direzione * push_pull.points[0]
-# step = direzione * push_pull.step
-# total_steps = round(spostamento/step)
+    for i in range (n+1):           # Scrivo a quali nodi devo settare un recorder per la base
 
-# # ---------------------------------------------------------------------------------------------------------------------------
-# # Definisco il Pattern di spinta
-# # ---------------------------------------------------------------------------------------------------------------------------
+        base_nodes += f',{nodeGrid(i, 0)}'
+        # print(base_nodes)
 
-# ops.pattern('Plain', 1, 1)
 
-# for j in range(m):          # j da 0 a m - 1
+    exec('ops.recorder("Node", "-file", "Pushover\Pushover_Base_Reactions.out", "-time", "-node"' + base_nodes + ', "-dof", 1, "reaction")')
 
-#     try:
+    ops.recorder('Node', '-file', 'Pushover\Pushover_Storey_Drift.out', '-time', '-node', controlNode(), '-dof', 1, 'disp')
 
-#         ops.load(nodeGrid(0, j + 1), direzione * push_pull.pattern[j], 0., 0.)  # Applico la forza j al piano j + 1 poiché salto il piano 0
+    # ---------------------------------------------------------------------------------------------------------------------------
+    # Inizio la definizione della prima Push
+    # ---------------------------------------------------------------------------------------------------------------------------
 
-#     except:
+    print(f'-o-o-o- Analisi Push-Pull 1/{len(push_pull.points)} -o-o-o-')
 
-#         print('Errore: Il numero di forze del pattern differisce dal numero di piani fuori terra')
+    # Parte il cronometro
+    tStart = round(time.time() * 1000)
 
-# # ---------------------------------------------------------------------------------------------------------------------------
-# # Opzioni di analisi
-# # ---------------------------------------------------------------------------------------------------------------------------
+    # Definisco i Parametri 
+    direzione = push_pull.points[0]/abs(push_pull.points[0])
+    spostamento = direzione * push_pull.points[0]
+    step = direzione * push_pull.step
+    total_steps = round(spostamento/step)
 
-# ops.constraints('Transformation')
-# ops.numberer('RCM')
-# ops.system('BandGen')
-# ops.test('NormDispIncr', 0.000001, 100)
-# ops.algorithm('NewtonLineSearch', True, False, False, False, 0.8, 1000, 0.1, 10)
-# ops.integrator('DisplacementControl', controlNode(), 1, step)
-# ops.analysis('Static')
+    # ---------------------------------------------------------------------------------------------------------------------------
+    # Definisco il Pattern di spinta
+    # ---------------------------------------------------------------------------------------------------------------------------
 
-# # ---------------------------------------------------------------------------------------------------------------------------
-# # Mando l'analisi
-# # ---------------------------------------------------------------------------------------------------------------------------
-# ops.record()
-# ops.analyze(total_steps)
+    ops.pattern('Plain', 1, 1)
 
-# # Info sulle Performance
-# tStop = round(time.time() * 1000)
-# totalTime = (tStop - tStart)/1000
+    for j in range(m):          # j da 0 a m - 1
 
-# print(f'-o-o-o- Analisi conclusa 1/{len(push_pull.points)} dopo {totalTime} sec -o-o-o- ')
+        try:
 
-# # ---------------------------------------------------------------------------------------------------------------------------
-# # Punti successivi
-# # ---------------------------------------------------------------------------------------------------------------------------
+            ops.load(nodeGrid(0, j + 1), direzione * push_pull.pattern[j], 0., 0.)  # Applico la forza j al piano j + 1 poiché salto il piano 0
 
-# if len(push_pull.points) > 1:
+        except:
 
-#     for v in range(1,len(push_pull.points)):
+            print('Errore: Il numero di forze del pattern differisce dal numero di piani fuori terra')
 
-#         print(f'-o-o-o- Analisi Push-Pull {v + 1}/{len(push_pull.points)} -o-o-o-')
+    # ---------------------------------------------------------------------------------------------------------------------------
+    # Opzioni di analisi
+    # ---------------------------------------------------------------------------------------------------------------------------
 
-#         # Parte il cronometro
-#         tStart = round(time.time() * 1000)
+    ops.constraints('Transformation')
+    ops.numberer('RCM')
+    ops.system('BandGen')
+    ops.test('NormDispIncr', 0.000001, 100)
+    ops.algorithm('NewtonLineSearch', True, False, False, False, 0.8, 1000, 0.1, 10)
+    ops.integrator('DisplacementControl', controlNode(), 1, step)
+    ops.analysis('Static')
 
-#         # Definisco i Parametri 
-#         try:
+    # ---------------------------------------------------------------------------------------------------------------------------
+    # Mando l'analisi
+    # ---------------------------------------------------------------------------------------------------------------------------
+    ops.record()
+    ops.analyze(total_steps)
 
-#             direzione = abs(push_pull.points[v] - push_pull.points[v - 1]) / (push_pull.points[v] - push_pull.points[v - 1])
-#             spostamento = push_pull.points[v] - push_pull.points[v - 1]
-#             step = direzione * push_pull.step
-#             total_steps = round(spostamento/step)
+    # Info sulle Performance
+    tStop = round(time.time() * 1000)
+    totalTime = (tStop - tStart)/1000
 
-#         except:
+    print(f'-o-o-o- Analisi conclusa 1/{len(push_pull.points)} dopo {totalTime} sec -o-o-o- ')
 
-#             print('Errore nella definizione dei punti: controllare che non ci siano punti successivi di egual spostamento')
-#             break
+    # ---------------------------------------------------------------------------------------------------------------------------
+    # Punti successivi
+    # ---------------------------------------------------------------------------------------------------------------------------
 
-#         # Opzioni di Analisi
-#         ops.numberer('RCM')
-#         ops.system('BandGen')
-#         ops.test('NormDispIncr', 0.000001, 100)
-#         ops.algorithm('NewtonLineSearch', True, False, False, False, 0.8, 1000, 0.1, 10)
-#         ops.integrator('DisplacementControl', controlNode(), 1, step)
-#         ops.analysis('Static')
+    if len(push_pull.points) > 1:
 
-#         # Mando l'analisi
-#         ops.record()
-#         ops.analyze(total_steps)
+        for v in range(1,len(push_pull.points)):
 
-#         # Info sulle Performance
-#         tStop = round(time.time() * 1000)
-#         totalTime = (tStop - tStart)/1000
+            print(f'-o-o-o- Analisi Push-Pull {v + 1}/{len(push_pull.points)} -o-o-o-')
 
-#         print(f'-o-o-o- Analisi conclusa {v + 1}/{len(push_pull.points)} dopo {totalTime} sec -o-o-o- ')
+            # Parte il cronometro
+            tStart = round(time.time() * 1000)
 
-# ops.wipeAnalysis()
+            # Definisco i Parametri 
+            try:
+
+                direzione = abs(push_pull.points[v] - push_pull.points[v - 1]) / (push_pull.points[v] - push_pull.points[v - 1])
+                spostamento = push_pull.points[v] - push_pull.points[v - 1]
+                step = direzione * push_pull.step
+                total_steps = round(spostamento/step)
+
+            except:
+
+                print('Errore nella definizione dei punti: controllare che non ci siano punti successivi di egual spostamento')
+                break
+
+            # Opzioni di Analisi
+            ops.numberer('RCM')
+            ops.system('BandGen')
+            ops.test('NormDispIncr', 0.000001, 100)
+            ops.algorithm('NewtonLineSearch', True, False, False, False, 0.8, 1000, 0.1, 10)
+            ops.integrator('DisplacementControl', controlNode(), 1, step)
+            ops.analysis('Static')
+
+            # Mando l'analisi
+            ops.record()
+            ops.analyze(total_steps)
+
+            # Info sulle Performance
+            tStop = round(time.time() * 1000)
+            totalTime = (tStop - tStart)/1000
+
+            print(f'-o-o-o- Analisi conclusa {v + 1}/{len(push_pull.points)} dopo {totalTime} sec -o-o-o- ')
+
+
+ops.wipeAnalysis()
 
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -805,8 +845,8 @@ except:
 
 def runModalAnalysis ():
 
-    ops.recorder('Node', '-file', 'Modal\ModalAnalysis_Node_EigenVectors_EigenVectorsVec1.out', '-time', '-node', 0, 3, 6, '-dof', 1, 'eigen1')
-    ops.recorder('Node', '-file', 'Modal\ModalAnalysis_Node_EigenVectors_EigenVectorsVec2.out', '-time', '-node', 0, 3, 6, '-dof', 1, 'eigen2')
+    # ops.recorder('Node', '-file', 'Modal\ModalAnalysis_Node_EigenVectors_EigenVectorsVec1.out', '-time', '-node', 0, '-dof', 1, 'eigen1')
+    # ops.recorder('Node', '-file', 'Modal\ModalAnalysis_Node_EigenVectors_EigenVectorsVec2.out', '-time', '-node', 0, '-dof', 1, 'eigen2')
 
     print('-o-o-o- Modal Analysis Started -o-o-o-' )
 
@@ -851,18 +891,39 @@ def runModalAnalysis ():
     return eigen_periods
 
 
-structure_periods = runModalAnalysis()
-print(structure_periods)
+if run_time_history:
+    structure_periods = runModalAnalysis()
+    print(structure_periods)
+
+
 
 def runTimeHistory (acc_IDs = []):
+
     i = 1
+
     for acc_ID in acc_IDs:
+
         print(f'-o-o-o- Analysis TH {acc_ID} -o-o-o-')
 
-        ops.recorder('Node', '-file', f'TimeHistory\TimeHistory_Base_Reactions.{acc_ID}.out', '-time', '-node', 0, 1, 2, '-dof', 1, 'reaction')
-        ops.recorder('Node', '-file', f'TimeHistory\TimeHistory_Storey_Displacement.{acc_ID}.out', '-time', '-node', 0, 3, 6, '-dof', 1, 'disp')
-        ops.recorder('Node', '-file', f'TimeHistory\TimeHistory_Storey_Acceleration.{acc_ID}.out', '-time', '-node', 0, 3, 6, '-dof', 1, 'accel')
-        ops.recorder('Node', '-file', f'TimeHistory\TimeHistory_Storey_Velocity.{acc_ID}.out', '-time', '-node', 0, 3, 6, '-dof', 1, 'vel')
+        base_nodes = ''
+        storey_nodes = ''
+
+        for i in range (n+1):           # Scrivo a quali nodi devo settare un recorder per la base
+
+            base_nodes += f',{nodeGrid(i, 0)}'
+            # print(base_nodes)
+
+        for j in range (m+1):           # Scrivo a quali nodi devo settare un recorder per la base
+
+            storey_nodes += f',{nodeGrid(0, j)}'
+            # print(storey_nodes)
+
+
+        exec(f'ops.recorder("Node", "-file", "TimeHistory\TimeHistory_Base_Reactions.{acc_ID}.out", "-time", "-node"' + base_nodes + ', "-dof", 1, "reaction")')
+        exec(f'ops.recorder("Node", "-file", "TimeHistory\TimeHistory_Storey_Displacement.{acc_ID}.out", "-time", "-node"' + storey_nodes + ', "-dof", 1, "disp")')
+        exec(f'ops.recorder("Node", "-file", "TimeHistory\TimeHistory_Storey_Acceleration.{acc_ID}.out", "-time", "-node"' + storey_nodes + ', "-dof", 1, "accel")')
+        exec(f'ops.recorder("Node", "-file", "TimeHistory\TimeHistory_Storey_Velocity.{acc_ID}.out", "-time", "-node"' + storey_nodes + ', "-dof", 1, "vel")')
+
         ops.recorder('Node', '-file', f'TimeHistory\TimeHistory_ControlNode_Displacement.{acc_ID}.out', '-time', '-node', controlNode(), '-dof', 1, 'disp')
 
         # Definisco i parametri della matrice di Damping
@@ -876,10 +937,14 @@ def runTimeHistory (acc_IDs = []):
         # Parametri TH
         dt = 0.005
         TH_steps = 5579
+
         ops.timeSeries('Path', i + 1, '-dt', dt, '-filePath', f'acc_{acc_ID}.txt', '-factor', 0.01) # creo la TimeSeries cm/s^2
+
         # Parametri di Analisi
+
         tol = 0.000001
         maxIter = 5000
+
         ops.test('NormDispIncr', tol, maxIter, 0, 0)
         ops.pattern('UniformExcitation', i + 1, 1, '-accel', i + 1)
         ops.constraints('Plain')
@@ -893,15 +958,21 @@ def runTimeHistory (acc_IDs = []):
 
         # Lacio e monitoro
         success = True
+
         t = 0 
+
         finalt = ops.getTime() + TH_steps * dt
         tStart = round(time.time() * 1000)
+
         dt_analysis = dt * 0.5  # Un decimo della discretizzazione della TH
 
         while (success and t <= finalt):
+
             analysis_status = ops.analyze(1, dt_analysis)
             success = (analysis_status == 0)
+
             t = ops.getTime()
+
         
         tStop = round(time.time() * 1000)
         timeSeconds = round((tStop - tStart) / 1000)
@@ -909,13 +980,21 @@ def runTimeHistory (acc_IDs = []):
         timeHours = round(timeSeconds / 3600)
         timeMinutes = round(timeMinutes - timeHours * 60)
         timeSeconds = round(timeSeconds - timeHours * 3600 - timeMinutes * 60)
+
         if success:
+
             print(f'-o-o-o- Analisi TH terminata {acc_ID} in {timeHours}:{timeMinutes}:{timeSeconds} -o-o-o-')
+
         else:
+
             print(f'-o-o-o- Analisi TH fallita {acc_ID} in {timeHours}:{timeMinutes}:{timeSeconds} -o-o-o-')
 
+
         ops.wipeAnalysis()
+
         i += 1
 
 
-runTimeHistory([1])
+if run_time_history:
+
+    runTimeHistory([1])
