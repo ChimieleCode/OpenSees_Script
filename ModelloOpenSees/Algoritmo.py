@@ -75,6 +75,26 @@ class PushPullAnalysis:
         self.pattern = pattern          # Pattern unitario di forze (solo fuori terra, si esclude il pian terreno)
 
 
+class TimeHistoryAnalysis:
+
+    def __init__(self, id, sf, dt, duration, timestepratio = 1):
+        self.duration = duration               # Lunghezza del segnale
+        self.dt = dt                        # Frequenza di campionamento
+        self.id = id                        # Id accelerogramma per trovarlo trai file (vanno chiamati acc_[id].txt e va messa solo la colonna delle accelerazioni)
+        self.sf = sf                        # Scale factor, ricorda che al programma servono in m/s2
+        self.timestepratio = timestepratio  # Moltiplicatore del dt per il time step di analisi
+
+
+    def steps(self):
+
+        return round(self.duration / self.dt)
+
+    
+    def show(self):
+
+        print(f'ID: {self.id} con ScaleFactor: {self.sf} | Campionamento: {self.dt}s Durata Segnale: {self.duration}s Analizza con un rapporto: {self.timestepratio}') 
+
+
 # ---------------------------------------------------------------------------------------------------------------------------
 # Importo DATA da Revit
 # ---------------------------------------------------------------------------------------------------------------------------
@@ -87,6 +107,9 @@ data = json.load(file)
 file.close
 
 frame = Frame(data['span'], data['storey'], round(data['n']), data['m'], data['r'], data['mass'], data['Heff'])
+
+# NODI
+G_joints = data['G_Joints']
 
 # Sezioni
 sections_data = data['sections']
@@ -125,10 +148,11 @@ rigid_factor = 1000         # Moltiplicatore del modulo di Young per zone rigide
 
 # PARAMETRI LINK RIGIDI
 rigid_stiffness = 1000000000000  # Rigidezza dei link rigidi espressa in kN/m
+rigid_joints = True     # Modellare i nodi come rigidi
 
 # ANALISI [ANCORA NON OPERATIVI]
-run_pushover = True
-run_time_history = False
+run_pushover = False
+run_time_history = True
 
 # ---------------------------------------------------------------------------------------------------------------------------
 # Funzioni Utili
@@ -204,7 +228,7 @@ def jointLink(j):       # Assunto che tutti i link allo stesso piano siano ugual
 
 def rigidLink():
 
-    return 3*m +2
+    return 3*(m + 1)
 
 
 # FUNZIONE PER DEFINIRE LA DEFORMATA DI PUSHOVER (PATTERN)
@@ -311,6 +335,7 @@ if not controlNode_override:
     else:
 
         on_Column = True
+
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ / \ /
@@ -606,7 +631,12 @@ for j in range(1, m + 1):       # j da 1 a m
     ops.uniaxialMaterial('Hardening', beamS(j), beams[j].E0, beams[j].Fy, beams[j].Hiso, beams[j].Hkin)
     # print(f'Material: {beamS(j)} Proprietà[E0,Fy]: {beams[j].E0, beams[j].Fy}')
 
-# SALTO LA DEFINIZIONE DEI LINK NODI, VERRANNO USATI I RIGID
+# DEFINIZIONE DEI LINK DEI NODI SE NON RIGIDI
+if not rigid_joints:
+    for j in range(1, m + 1):            # j da 1 a m
+        ops.uniaxialMaterial('Elastic', jointLink(j), (G_joints * column.h**2 * beams[j].h * frame.storey * (frame.span - column.h) * column.b) * 0.5 / (column.h * frame.storey * (frame.span - column.h) - frame.span * beams[j].h * column.h + column.b * frame.span * (frame.storey - beams[j].h) - frame.storey * column.h * column.b))
+        print(f'Material: {jointLink(j)} Rigidezza: {(G_joints * column.h**2 * beams[j].h * frame.storey * (frame.span - column.h) * column.b) * 0.5 / (column.h * frame.storey * (frame.span - column.h) - frame.span * beams[j].h * column.h + column.b * frame.span * (frame.storey - beams[j].h) - frame.storey * column.h * column.b)}')
+        
 
 # DEFINISCO IL LINK RIGIDO DA ASSEGNARE ALLA BASE PER 1 E 2
 ops.uniaxialMaterial('Elastic', rigidLink(), rigid_stiffness)
@@ -648,14 +678,22 @@ for j in range(1, m + 1):        # j da 1 a m
         # print(f'id: {x} nodo i: {nodeBeam(i, j, 1)} nodo j: {nodeRigidBeam(i, j, 1)} Material: {beamS(j)}')
         x += 1
 
-# LINK DEI NODI NON DEFINITI
+# LINK DEI NODI
 for j in range(1, m + 1):        # j da 1 a m
 
     for i in range(n + 1):           # i da 0 a n
 
-        ops.element('zeroLength', x, nodeGrid(i, j), nodePanel(i, j), '-mat', rigidLink(), rigidLink(), rigidLink(), '-dir', 6, 1, 2)      # Da sostituire il primo con adeguati 
-        # print(f'id: {x} nodo i: {nodeGrid(i, j)} nodo j: {nodePanel(i, j)} Material: {rigidLink()}')
-        x += 1
+        if rigid_joints:
+
+            ops.element('zeroLength', x, nodeGrid(i, j), nodePanel(i, j), '-mat', rigidLink(), rigidLink(), rigidLink(), '-dir', 6, 1, 2)
+            # print(f'id: {x} nodo i: {nodeGrid(i, j)} nodo j: {nodePanel(i, j)} Material: {rigidLink()}')
+            x += 1
+
+        else:
+        
+            ops.element('zeroLength', x, nodeGrid(i, j), nodePanel(i, j), '-mat', jointLink(j), rigidLink(), rigidLink(), '-dir', 6, 1, 2) 
+            # print(f'id: {x} nodo i: {nodeGrid(i, j)} nodo j: {nodePanel(i, j)} Material: {jointLink(j)}')
+            x += 1
 
 # ---------------------------------------------------------------------------------------------------------------------------
 # Definisco una TimeSeries per l'applicazione dei carichi
@@ -845,8 +883,8 @@ ops.wipeAnalysis()
 
 def runModalAnalysis ():
 
-    # ops.recorder('Node', '-file', 'Modal\ModalAnalysis_Node_EigenVectors_EigenVectorsVec1.out', '-time', '-node', 0, '-dof', 1, 'eigen1')
-    # ops.recorder('Node', '-file', 'Modal\ModalAnalysis_Node_EigenVectors_EigenVectorsVec2.out', '-time', '-node', 0, '-dof', 1, 'eigen2')
+    # ops.recorder('Node', '-file', 'Modal\ModalAnalysis_Node_EigenVectors_EigenVectorsVec1.out', '-time', '-node', 3, '-dof', 1, 'eigen1')
+    # ops.recorder('Node', '-file', 'Modal\ModalAnalysis_Node_EigenVectors_EigenVectorsVec2.out', '-time', '-node', 3, '-dof', 1, 'eigen2')
 
     print('-o-o-o- Modal Analysis Started -o-o-o-' )
 
@@ -891,54 +929,57 @@ def runModalAnalysis ():
     return eigen_periods
 
 
-if run_time_history:
-    structure_periods = runModalAnalysis()
-    print(structure_periods)
-
-
-
-def runTimeHistory (acc_IDs = []):
+def runTimeHistory (time_histories = []):
 
     i = 1
 
-    for acc_ID in acc_IDs:
+    for time_history in time_histories:
 
-        print(f'-o-o-o- Analysis TH {acc_ID} -o-o-o-')
+        print(f'-o-o-o- Analysis TH {time_history.id} -o-o-o-')
 
         base_nodes = ''
         storey_nodes = ''
 
-        for i in range (n+1):           # Scrivo a quali nodi devo settare un recorder per la base
+        for i in range (n + 1):           # Scrivo a quali nodi devo settare un recorder per la base
 
             base_nodes += f',{nodeGrid(i, 0)}'
             # print(base_nodes)
 
-        for j in range (m+1):           # Scrivo a quali nodi devo settare un recorder per la base
+        for j in range (m + 1):           # Scrivo a quali nodi devo settare un recorder per la base
 
             storey_nodes += f',{nodeGrid(0, j)}'
             # print(storey_nodes)
 
 
-        exec(f'ops.recorder("Node", "-file", "TimeHistory\TimeHistory_Base_Reactions.{acc_ID}.out", "-time", "-node"' + base_nodes + ', "-dof", 1, "reaction")')
-        exec(f'ops.recorder("Node", "-file", "TimeHistory\TimeHistory_Storey_Displacement.{acc_ID}.out", "-time", "-node"' + storey_nodes + ', "-dof", 1, "disp")')
-        exec(f'ops.recorder("Node", "-file", "TimeHistory\TimeHistory_Storey_Acceleration.{acc_ID}.out", "-time", "-node"' + storey_nodes + ', "-dof", 1, "accel")')
-        exec(f'ops.recorder("Node", "-file", "TimeHistory\TimeHistory_Storey_Velocity.{acc_ID}.out", "-time", "-node"' + storey_nodes + ', "-dof", 1, "vel")')
+        exec(f'ops.recorder("Node", "-file", "TimeHistory\TimeHistory_Base_Reactions.{time_history.id}_{time_history.sf}.out", "-time", "-node"' + base_nodes + ', "-dof", 1, "reaction")')
+        exec(f'ops.recorder("Node", "-file", "TimeHistory\TimeHistory_Storey_Displacement.{time_history.id}_{time_history.sf}.out", "-time", "-node"' + storey_nodes + ', "-dof", 1, "disp")')
+        exec(f'ops.recorder("Node", "-file", "TimeHistory\TimeHistory_Storey_Acceleration.{time_history.id}_{time_history.sf}.out", "-time", "-node"' + storey_nodes + ', "-dof", 1, "accel")')
+        exec(f'ops.recorder("Node", "-file", "TimeHistory\TimeHistory_Storey_Velocity.{time_history.id}_{time_history.sf}.out", "-time", "-node"' + storey_nodes + ', "-dof", 1, "vel")')
 
-        ops.recorder('Node', '-file', f'TimeHistory\TimeHistory_ControlNode_Displacement.{acc_ID}.out', '-time', '-node', controlNode(), '-dof', 1, 'disp')
+        ops.recorder('Node', '-file', f'TimeHistory\TimeHistory_ControlNode_Displacement.{time_history.id}_{time_history.sf}.out', '-time', '-node', controlNode(), '-dof', 1, 'disp')
 
         # Definisco i parametri della matrice di Damping
-        T1 = 0.25
-        T2 = 0.11 # SDOF, da sostituire con 2
+
+        T1 = structure_periods[0]
+
+        try:
+
+            T2 = structure_periods[1]
+
+        except: # Caso di SDOF
+
+            T2 = structure_periods[0] * 0.25
+
         omega1 = 2 * math.pi / T1
         omega2 = 2 * math.pi / T2
         aR = 2 * (omega1 * omega2 * (omega2 * frame.damping - omega1 * frame.damping)) / (omega2**2 - omega1**2)
         bR = 2 * (omega2 * frame.damping - omega1 * frame.damping) / (omega2**2 - omega1**2)
 
         # Parametri TH
-        dt = 0.005
-        TH_steps = 5579
+        dt = time_history.dt
+        TH_steps = round(time_history.duration / dt)
 
-        ops.timeSeries('Path', i + 1, '-dt', dt, '-filePath', f'acc_{acc_ID}.txt', '-factor', 0.01) # creo la TimeSeries cm/s^2
+        ops.timeSeries('Path', time_history.id + 1, '-dt', dt, '-filePath', f'acc_{time_history.id}.txt', '-factor', time_history.sf)
 
         # Parametri di Analisi
 
@@ -946,7 +987,7 @@ def runTimeHistory (acc_IDs = []):
         maxIter = 5000
 
         ops.test('NormDispIncr', tol, maxIter, 0, 0)
-        ops.pattern('UniformExcitation', i + 1, 1, '-accel', i + 1)
+        ops.pattern('UniformExcitation', time_history.id + 1, 1, '-accel', time_history.id + 1)
         ops.constraints('Plain')
         ops.integrator('Newmark', 0.5, 0.25)
         ops.rayleigh(aR, bR, 0., 0.)
@@ -964,7 +1005,7 @@ def runTimeHistory (acc_IDs = []):
         finalt = ops.getTime() + TH_steps * dt
         tStart = round(time.time() * 1000)
 
-        dt_analysis = dt * 0.5  # Un decimo della discretizzazione della TH
+        dt_analysis = dt * time_history.timestepratio  # Un decimo della discretizzazione della TH
 
         while (success and t <= finalt):
 
@@ -983,18 +1024,35 @@ def runTimeHistory (acc_IDs = []):
 
         if success:
 
-            print(f'-o-o-o- Analisi TH terminata {acc_ID} in {timeHours}:{timeMinutes}:{timeSeconds} -o-o-o-')
+            print(f'-o-o-o- Analisi TH terminata {time_history.id} in {timeHours}:{timeMinutes}:{timeSeconds} -o-o-o-')
 
         else:
 
-            print(f'-o-o-o- Analisi TH fallita {acc_ID} in {timeHours}:{timeMinutes}:{timeSeconds} -o-o-o-')
+            print(f'-o-o-o- Analisi TH fallita {time_history.id} in {timeHours}:{timeMinutes}:{timeSeconds} -o-o-o-')
 
 
         ops.wipeAnalysis()
-
+        ops.remove('recorders')
+        ops.remove('loadPattern', time_history.id + 1)
+        ops.reset()
         i += 1
+
+
+
+file = open('ModelloOpenSees/TimeHistory.json')
+data = json.load(file)
+file.close
+
+time_history_analysis = []
+
+for serie in data['TimeHistory']:
+    dictionary = dict(zip(serie['Keys'],serie['Values']))
+    timehistory = TimeHistoryAnalysis(dictionary['id'], dictionary['sf'], dictionary['dt'], dictionary['duration'], dictionary['TimeStepRatio'])
+    time_history_analysis.append(timehistory)
 
 
 if run_time_history:
 
-    runTimeHistory([1])
+    structure_periods = runModalAnalysis()
+    print(structure_periods)
+    runTimeHistory(time_history_analysis)
