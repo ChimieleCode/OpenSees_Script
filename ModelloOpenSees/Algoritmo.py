@@ -151,9 +151,8 @@ rigid_stiffness = 1000000000000  # Rigidezza dei link rigidi espressa in kN/m
 rigid_joints = True     # Modellare i nodi come rigidi
 
 # ANALISI [ANCORA NON OPERATIVI]
-run_pushover = False
+run_pushover = True
 run_time_history = True
-
 # ---------------------------------------------------------------------------------------------------------------------------
 # Funzioni Utili
 # ---------------------------------------------------------------------------------------------------------------------------
@@ -862,7 +861,9 @@ if run_pushover:
             print(f'-o-o-o- Analisi conclusa {v + 1}/{len(push_pull.points)} dopo {totalTime} sec -o-o-o- ')
 
 
-ops.wipeAnalysis()
+    ops.wipeAnalysis()
+    ops.remove('recorders')
+    ops.reset()
 
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1017,8 +1018,8 @@ def runTimeHistory (time_histories = []):
         
         tStop = round(time.time() * 1000)
         timeSeconds = round((tStop - tStart) / 1000)
-        timeMinutes = round(timeSeconds / 60)
-        timeHours = round(timeSeconds / 3600)
+        timeMinutes = math.floor(timeSeconds / 60)
+        timeHours = math.floor(timeSeconds / 3600)
         timeMinutes = round(timeMinutes - timeHours * 60)
         timeSeconds = round(timeSeconds - timeHours * 3600 - timeMinutes * 60)
 
