@@ -9,7 +9,7 @@ HP:
 -All the columns are the same
 -All beams from a given floor share same sections
 -Levels only describe storeys
--ONLY Seismic-Resistant MUST be included in the analytical model
+-ONLY Seismic-Resistant framing MUST be included in the analytical model
 
 THE USER HAVE TO:
 -Specify Mass of the building
