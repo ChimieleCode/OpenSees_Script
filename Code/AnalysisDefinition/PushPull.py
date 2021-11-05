@@ -39,7 +39,7 @@ def runPushoverAnalysis():
 
     # Definisco i Parametri 
     direzione = push_pull.points[0]/abs(push_pull.points[0])
-    spostamento = direzione * push_pull.points[0]
+    spostamento = push_pull.points[0]
     step = direzione * push_pull.step
     total_steps = round(spostamento/step)
 

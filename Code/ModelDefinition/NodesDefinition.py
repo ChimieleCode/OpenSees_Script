@@ -1,6 +1,7 @@
 import openseespy.opensees as ops
 
-from ImportFromJson import frame,column,beams
+from ImportFromJson import frame
+from MomentoRotazione import beams,column
 from ControlNode import controlNode_override
 
 from BasicFunctions.NodeFunctions import nodeGrid,nodeColumn,nodeTopColumn,nodeBase,nodeBeam,nodePanel,nodeRigidBeam

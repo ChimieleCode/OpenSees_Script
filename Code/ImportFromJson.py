@@ -1,10 +1,55 @@
 import json
+import copy
 
+from BasicFunctions.InelasticShape import inelasticShape
 from Classes.Frame import Frame
 from Classes.Section import Section
+from Classes.Tendon import Tendon
+from Classes.Timber import Timber
+from Classes.Steel import Steel
 from Classes.PushPullAnalysis import PushPullAnalysis
 from Classes.TimeHistoryAnalysis import TimeHistoryAnalysis
-from BasicFunctions.InelasticShape import inelasticShape
+
+# ---------------------------------------------------------------------------------------------------------------------------
+# Acciaio
+# ---------------------------------------------------------------------------------------------------------------------------
+
+file = open('Input/Steel.json')
+data = json.load(file)
+file.close
+
+B450C = Steel(
+    yieldStress = data['YieldStress'], 
+    r = data['r']
+    )
+
+# ---------------------------------------------------------------------------------------------------------------------------
+# Tendon
+# ---------------------------------------------------------------------------------------------------------------------------
+
+file = open('Input/Tendon.json')
+data = json.load(file)
+file.close
+
+tendon = Tendon(
+    yieldStress = data['YieldStress'], 
+    E = data['Young'], 
+    area = data['Area']
+    )
+
+# ---------------------------------------------------------------------------------------------------------------------------
+# Timber
+# ---------------------------------------------------------------------------------------------------------------------------
+
+file = open('Input/Timber.json')
+data = json.load(file)
+file.close
+
+LVL = Timber(
+    parallelStrength = data['YieldStress'], 
+    E = data['Young'], 
+    G = data['G']
+    )
 
 # ---------------------------------------------------------------------------------------------------------------------------
 # Telaio
@@ -14,32 +59,56 @@ file = open('Input/Telaio.json')
 data = json.load(file)
 file.close
 
-frame = Frame
-frame = Frame(data['span'], data['storey'], round(data['n']), data['m'], data['r'], data['mass'], data['Heff'])
-
-# NODI
-G_joints = data['G_Joints']
+frame = Frame(
+    span =data['span'],
+    storey = data['storey'], 
+    n = round(data['n']), 
+    m = data['m'], 
+    r = data['r'],
+    mass = data['mass'], 
+    Heff = data['Heff']
+    )
 
 # ---------------------------------------------------------------------------------------------------------------------------
 # Sezioni
 # ---------------------------------------------------------------------------------------------------------------------------
+
 sections_data = data['sections']
 sections = []
 
 for data in sections_data:
+
     section =  dict(zip(data['Keys'], data['Values']))
-    element = Section(section['Section'][1], section['Section'][0], section['Material'], section['S'][0], section['S'][1], section['Strain'], section['Stress'], section['S'][2], section['S'][3])
+
+    element = Section(
+        h = section['h'],
+        b = section['b'],
+        c = section['c'],
+        kcon = section['Kcon'],
+        axialLoad = section['AxialLoad'],
+        steelBarNumber = section['Reinforcement'][1],
+        steelBarDiameter = section['Reinforcement'][0],
+        ptNumber = section['Tensioning'][0],
+        ptTension = section['Tensioning'][1],
+        timber = LVL,
+        steel = B450C
+        )
+    
+    if element.kcon != 0.55:
+
+        element.tendon = tendon
+    
+
     sections.append(element)
 
-# COLONNE
-column = sections[0]
+# Pilastro Esterno
 
-# TRAVI
-beams = [Section(0,0,0,0,0,0)]    # Piano terra non ha travi
+sections.append(copy.deepcopy(sections[0]))             # Creo una nuova istanza identica ed indipendente
 
-for j in range(1, frame.m + 1):    # Per il momento tutte travi uguali
+if frame.n > 2:
+    
+    sections[-1].axialLoad = sections[-1].axialLoad/2     # Assumo che per i pilsatri esterni l'assiale sia la metà a meno che non esistano pilastri interni
 
-    beams.append(sections[j])
 
 # ---------------------------------------------------------------------------------------------------------------------------
 # Pushover

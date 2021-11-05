@@ -1,4 +1,5 @@
-from ImportFromJson import frame,beams
+from ImportFromJson import frame
+from MomentoRotazione import beams
 from ModelOptions import tolleranza_di_sovrapposizione
 
 from BasicFunctions.NodeFunctions import nodeGrid,nodeTopColumn,nodeColumn
@@ -68,8 +69,8 @@ on_CCR_down = False
 on_Column = False
 
 if not controlNode_override:
-    # Cerco il piano a cui si trova il nodo
-    j = 0
+    # Cerco il piano a cui si trova il nodo, non può stare al piano 0
+    j = 1
 
     while j <= m - 1:
 
