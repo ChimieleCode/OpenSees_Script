@@ -12,14 +12,14 @@ rigid_stiffness = 1000000000000  # Rigidezza dei link rigidi espressa in kN/m
 rigid_joints = True    # Modellare i nodi come rigidi
 
 # LINK OPTIONS
-use_GM = True             # Usre GM? Altrimenti Kinematic
-steel_failure = False       # Considera il fallimento dei link S
-tendon_failure = True      # Considera il fallimento dei link PT al loro snervamento, Non agisce sui link N
+use_GM = True            # Usre GM? Altrimenti Kinematic
+steel_failure = False     # Considera il fallimento dei link S
+tendon_failure = False      # Considera il fallimento dei link PT al loro snervamento, Non agisce sui link N
  
 # RUN ANALYSIS
-run_modal = True
-run_pushover = True
-run_time_history = False
+run_modal = False
+run_pushover = False
+run_time_history = True
 
 # CONTROL NODE 
 tolleranza_di_sovrapposizione = 0.01            # (si considera sovrapposto ad uno esistente entro una tolleranza di 1cm)

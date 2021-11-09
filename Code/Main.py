@@ -1,3 +1,4 @@
+
 from ModelOptions import run_pushover,run_time_history,run_modal
 from ImportFromJson import time_history_analysis
 
@@ -70,3 +71,9 @@ if run_time_history:
 
     structure_periods = runModalAnalysis()
     runTimeHistory(time_history_analysis,structure_periods)
+
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# PLOT DATA
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+import PlotData
