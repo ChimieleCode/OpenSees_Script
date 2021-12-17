@@ -1,7 +1,7 @@
 import json
 import copy
 
-from BasicFunctions.InelasticShape import inelasticShape
+from BasicFunctions.InelasticShape import inelasticShape, getEffectiveHeight
 from Classes.Frame import Frame
 from Classes.Section import Section
 from Classes.Tendon import Tendon
@@ -18,7 +18,7 @@ file = open('Input/Steel.json')
 data = json.load(file)
 file.close
 
-B450C = Steel(
+steel = Steel(
     yieldStress = data['YieldStress'], 
     r = data['r']
     )
@@ -45,7 +45,7 @@ file = open('Input/Timber.json')
 data = json.load(file)
 file.close
 
-LVL = Timber(
+timber = Timber(
     parallelStrength = data['YieldStress'], 
     E = data['Young'], 
     G = data['G']
@@ -65,9 +65,11 @@ frame = Frame(
     n = round(data['n']), 
     m = data['m'], 
     r = data['r'],
-    mass = data['mass'], 
-    Heff = data['Heff']
+    mass = data['mass'],
+    damping = 0.03
     )
+
+frame.Heff = getEffectiveHeight(frame)
 
 # ---------------------------------------------------------------------------------------------------------------------------
 # Sezioni
@@ -90,13 +92,18 @@ for data in sections_data:
         steelBarDiameter = section['Reinforcement'][0],
         ptNumber = section['Tensioning'][0],
         ptTension = section['Tensioning'][1],
-        timber = LVL,
-        steel = B450C
+        timber = timber,
+        steel = steel
         )
     
     if element.kcon != 0.55:
 
         element.tendon = tendon
+        element.isBeam = True
+
+    else:
+
+        element.isBeam = False
     
 
     sections.append(element)
