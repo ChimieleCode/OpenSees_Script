@@ -37,31 +37,36 @@ def beamS(j):
     return 2*(j + 1) + 1
 
 
-def jointLink(j):       # Assunto che tutti i link allo stesso piano siano uguali
+def jointInternalLink(j):  
 
-    return 2*(m + 1) + j + 1
+    return 2*(m + 1) + (j + 1)
+
+
+def jointExternalLink(j):
+
+    return 3*(m + 1) + j
 
 
 def rigidLink():
 
-    return 3*(m + 1) + 1
+    return 4*(m + 1)
 
 def columnS_MinMax(i):
 
     if i == 0 or i == n:
 
-        return 3*(m + 1) + 3
+        return 4*(m + 1) + 1
     
     else:
 
-        return 3*(m + 1) + 2  
+        return 4*(m + 1) + 2  
 
 
 def beamS_MinMax(j):
 
-    return 3*(m + 1) + 2*(j + 1)
+    return 4*(m + 1) + 2*(j + 1) - 1
 
 
 def beamPT_MinMax(j):
 
-    return 3*(m + 1) + 2*(j + 1) + 1
+    return 4*(m + 1) + 2*(j + 1) 

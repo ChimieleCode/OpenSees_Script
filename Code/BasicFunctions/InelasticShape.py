@@ -17,3 +17,28 @@ def inelasticShape(frame):
             shape.append(4/3 * (j*frame.storey/frame.height()) * (1 - j*frame.storey/frame.height() * 1/4))
 
     return shape
+
+
+
+def getEffectiveHeight(frame):
+
+    m = frame.m
+
+    shape = inelasticShape(frame)
+
+    mass = frame.mass
+    mass.pop(0)
+
+    H = [i * frame.storey for i in range(1, m + 1)]
+
+    MD = [a * b for a,b in zip(shape, mass)]
+
+    MDH = [a * b for a,b in zip(MD, H)]
+    
+
+    Heff = sum(MDH)/sum(MD)
+
+    return Heff
+
+    
+

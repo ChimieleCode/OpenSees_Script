@@ -32,7 +32,7 @@ def steelStress(theta, neutralAxis, section):
         else:
 
             sign = abs(strain) / strain
-            stresses.append(sign * section.steelArea() * section.steel.yieldStress * ( 1 + section.steel.r * (strain / yield_strain -1)) )
+            stresses.append(sign * section.steelArea() * section.steel.yieldStress * ( 1 + section.steel.r * (strain / yield_strain - 1)) )
         
 
     return stresses
@@ -40,9 +40,9 @@ def steelStress(theta, neutralAxis, section):
 
 def timberStress(theta, neutralAxis, section):
 
-    strain = timberStrain(theta, neutralAxis)
+    strain = timberStrain(theta, neutralAxis, section)
 
-    limit_strain = section.timber.epsilonlim()
+    limit_strain = section.timber.epsilonlim(section.kcon)
 
     if strain <= limit_strain:
 

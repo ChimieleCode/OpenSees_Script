@@ -7,9 +7,9 @@ class Timber:
         self.G = G                                      # G in kPa 
 
 
-    def epsilonlim(self):
+    def epsilonlim(self, kcon):
 
-        epsilon = self.parallelStrength / self.E
+        epsilon = self.parallelStrength / (self.E * kcon)
 
         return epsilon
 

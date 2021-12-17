@@ -4,9 +4,9 @@ from BasicFunctions.StressFunctions import steelStress, tendonStress
 
 def timberBarycentre(theta, neutralAxis, section):
 
-    strain = timberStrain(theta, neutralAxis) 
+    strain = timberStrain(theta, neutralAxis, section) 
     
-    plastic = max(0, neutralAxis * (strain - section.timber.epsilonlim())/section.timber.epsilonlim())
+    plastic = max(0, neutralAxis * (strain - section.timber.epsilonlim(section.kcon))/section.timber.epsilonlim(section.kcon))
 
     barycentre = ((neutralAxis**2 - 2 * plastic**2 + plastic * neutralAxis)  * 1/3 + plastic**2)/ (plastic + neutralAxis)
     

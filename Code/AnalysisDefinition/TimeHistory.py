@@ -3,13 +3,16 @@ import time
 import math
 
 from ImportFromJson import frame
+from ModelOptions import compute_spectral_response, compute_section_gaps_evnelopes
 
 from ControlNode import controlNode
-from BasicFunctions.NodeFunctions import nodeGrid
+from BasicFunctions.NodeFunctions import nodeGrid, nodeRigidBeam, nodeBeam, nodeBase
+from BasicFunctions.SpectralAcceleration import spectralAcceleration
 
 m = frame.m
 n = frame.n
 
+spectral_response = []
 
 def runTimeHistory (time_histories = [], structure_periods = []):
 
@@ -19,26 +22,50 @@ def runTimeHistory (time_histories = [], structure_periods = []):
 
         print(f'-o-o-o- Analysis TH {time_history.id} -o-o-o-')
 
-        base_nodes = ''
-        storey_nodes = ''
+        base_nodes = []
+        storey_nodes = []
 
         for i in range (n + 1):           # Scrivo a quali nodi devo settare un recorder per la base
 
-            base_nodes += f',{nodeGrid(i, 0)}'
-            # print(base_nodes)
-
-        for j in range (m + 1):           # Scrivo a quali nodi devo settare un recorder per la base
-
-            storey_nodes += f',{nodeGrid(0, j)}'
-            # print(storey_nodes)
+            base_nodes.append(nodeGrid(i, 0))
 
 
-        exec(f'ops.recorder("Node", "-file", "Output\TimeHistory\TimeHistory_Base_Reactions.{time_history.id}_{time_history.sf}.out", "-time", "-node"' + base_nodes + ', "-dof", 1, "reaction")')
-        exec(f'ops.recorder("Node", "-file", "Output\TimeHistory\TimeHistory_Storey_Displacement.{time_history.id}_{time_history.sf}.out", "-time", "-node"' + storey_nodes + ', "-dof", 1, "disp")')
-        exec(f'ops.recorder("Node", "-file", "Output\TimeHistory\TimeHistory_Storey_Acceleration.{time_history.id}_{time_history.sf}.out", "-time", "-node"' + storey_nodes + ', "-dof", 1, "accel")')
-        exec(f'ops.recorder("Node", "-file", "Output\TimeHistory\TimeHistory_Storey_Velocity.{time_history.id}_{time_history.sf}.out", "-time", "-node"' + storey_nodes + ', "-dof", 1, "vel")')
+        for j in range (m + 1):           # Scrivo a quali nodi devo settare i recorder al piano
 
+            storey_nodes.append(nodeGrid(0, j))
+
+
+        # Reazioni alla base
+        ops.recorder('Node', '-file', f'Output\TimeHistory\TimeHistory_Base_Reactions.{time_history.id}_{time_history.sf}.out', '-time', '-node', *base_nodes, '-dof', 1, 'reaction')
+        # Spostamenti di piano
+        ops.recorder('Node', '-file', f'Output\TimeHistory\TimeHistory_Storey_Displacement.{time_history.id}_{time_history.sf}.out', '-time', '-node', *storey_nodes, '-dof', 1, 'disp')
+        # Accelerazione di piano
+        ops.recorder('Node', '-file', f'Output\TimeHistory\TimeHistory_Storey_Acceleration.{time_history.id}_{time_history.sf}.out', '-time', '-node', *storey_nodes, '-dof', 1, 'accel')
+        # Velocità di piano
+        ops.recorder('Node', '-file', f'Output\TimeHistory\TimeHistory_Storey_Velocity.{time_history.id}_{time_history.sf}.out', '-time', '-node', *storey_nodes, '-dof', 1, 'vel')
+        # Spostamento nodo di controllo
         ops.recorder('Node', '-file', f'Output\TimeHistory\TimeHistory_ControlNode_Displacement.{time_history.id}_{time_history.sf}.out', '-time', '-node', controlNode(), '-dof', 1, 'disp')
+
+
+        if compute_section_gaps_evnelopes:
+
+            gap_nodes = [nodeGrid(0,0), nodeBase(0), nodeGrid(1,0), nodeBase(1)]
+
+            for j in range (1, m + 1):           # Scrivo a quali nodi devo settare i recorder al piano eccetto Pian Terreno
+
+                gap_nodes.append(nodeRigidBeam(1, j, 0))
+                gap_nodes.append(nodeBeam(1, j, 0))
+
+                gap_nodes.append(nodeRigidBeam(1, j, 1))
+                gap_nodes.append(nodeBeam(1, j, 1))
+
+
+            # Apertura Gap prima verticale
+            ops.recorder('Node', '-file', f'Output\TimeHistory\TimeHistory_Section_Gaps.{time_history.id}_{time_history.sf}.out', '-time', '-node', *gap_nodes, '-dof', 3, 'disp')
+
+            # print(gap_nodes)
+
+
 
         # Definisco i parametri della matrice di Damping
 
@@ -56,6 +83,15 @@ def runTimeHistory (time_histories = [], structure_periods = []):
         omega2 = 2 * math.pi / T2
         aR = 2 * (omega1 * omega2 * (omega2 * frame.damping - omega1 * frame.damping)) / (omega2**2 - omega1**2)
         bR = 2 * (omega2 * frame.damping - omega1 * frame.damping) / (omega2**2 - omega1**2)
+
+        # Calcolo accelerazione spettrale SDOF di primo Modo
+        if compute_spectral_response:
+
+            Sa = spectralAcceleration(time_history = time_history, structure_period = structure_periods[0])
+
+            print(f'Sa: {Sa}')
+
+            spectral_response.append([time_history.id, Sa])
 
         # Parametri TH
         dt = time_history.dt

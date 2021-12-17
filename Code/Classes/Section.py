@@ -4,7 +4,7 @@ class Section:
 
     lambdaBar = 60
 
-    def __init__(self, h, b, kcon, steelBarNumber, steelBarDiameter, c, timber, steel, tendon = None, ptNumber = 0, ptTension = 0, axialLoad = 0, multilinearElasticLink = None, kineticLink = None, GMLink = None):
+    def __init__(self, h, b, kcon, steelBarNumber, steelBarDiameter, c, timber, steel, tendon = None, ptNumber = 0, ptTension = 0, axialLoad = 0, multilinearElasticLink = None, kineticLink = None, GMLink = None, isBeam = None):
 
         self.h = h                                  # Altezza della sezione in m
         self.b = b                                  # Larghezza della Sezione in m
@@ -21,6 +21,7 @@ class Section:
         self.multilinearElasticLink = multilinearElasticLink
         self.kineticLink = kineticLink
         self.GMLink = GMLink
+        self.isBeam = isBeam                        # Se è una trave == True
         
     
     def area(self):     # Calcola l'area della sezione

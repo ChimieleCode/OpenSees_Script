@@ -4,7 +4,9 @@ import time
 from ImportFromJson import frame,push_pull
 
 from ControlNode import controlNode
-from BasicFunctions.NodeFunctions import nodeGrid
+from BasicFunctions.NodeFunctions import nodeGrid, nodeRigidBeam, nodeBeam
+from ModelOptions import record_section_gaps
+
 
 m = frame.m
 n = frame.n
@@ -16,17 +18,37 @@ n = frame.n
 def runPushoverAnalysis():
 
     # Setto i recorders
-    base_nodes = ''
+    base_nodes = []
+    storey_nodes = []
 
     for i in range (n + 1):           # Scrivo a quali nodi devo settare un recorder per la base
 
-        base_nodes += f',{nodeGrid(i, 0)}'
-        # print(base_nodes)
+        base_nodes.append(nodeGrid(i, 0))
+
+    
+    for j in range (m + 1):           # Scrivo a quali nodi devo settare i recorder al piano
+
+        storey_nodes.append(nodeGrid(0, j))
 
 
-    exec('ops.recorder("Node", "-file", "Output\Pushover\Pushover_Base_Reactions.out", "-time", "-node"' + base_nodes + ', "-dof", 1, "reaction")')
+    # Reazione alla base
+    ops.recorder('Node', '-file', 'Output\Pushover\Pushover_Base_Reactions.out', '-time', '-node', *base_nodes, '-dof', 1, 'reaction')
+    # Spostamento del nodo di Controllo
+    ops.recorder('Node', '-file', 'Output\Pushover\Pushover_Control_Disp.out', '-time', '-node', controlNode(), '-dof', 1, 'disp')
+    # Spostamenti di piano
+    ops.recorder('Node', '-file', 'Output\Pushover\Pushover_Storey_Disp.out', '-time', '-node', *storey_nodes, '-dof', 1, 'disp')
 
-    ops.recorder('Node', '-file', 'Output\Pushover\Pushover_Storey_Drift.out', '-time', '-node', controlNode(), '-dof', 1, 'disp')
+    if record_section_gaps:
+
+        gap_nodes = []
+
+        for j in range (1, m + 1):           # Scrivo a quali nodi devo settare i recorder al piano eccetto Pian Terreno
+
+            gap_nodes.append(nodeRigidBeam(1, j, 0))
+            gap_nodes.append(nodeBeam(1, j, 0))
+
+        # Apertura Gap prima verticale
+        ops.recorder('Node', '-file', 'Output\Pushover\Pushover_Storey_Gaps.out', '-time', '-node', *gap_nodes, '-dof', 3, 'disp')
 
     # ---------------------------------------------------------------------------------------------------------------------------
     # Inizio la definizione della prima Push

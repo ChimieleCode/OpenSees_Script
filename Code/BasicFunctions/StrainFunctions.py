@@ -30,9 +30,20 @@ def steelStrain(theta, neutralAxis, section):
     return strains
 
 
-def timberStrain(theta, neutralAxis):
+def timberStrain(theta, neutralAxis, section):
 
-    strain = neutralAxis * ( 3 * theta / (frame.span - sections[0].h) * 2)
+    Lcant = 0
+
+    if section.isBeam:
+
+        Lcant = (frame.span - sections[0].h) / 2        # Se è una trave Lcant = Ltrave - hc
+    
+    else:
+
+        Lcant = (frame.storey - sections[1].h) / 2      # Se è colonna di base Lcant = Hcolumn - hbeam,1
+        
+
+    strain = neutralAxis * ( 3 * theta / Lcant)
 
     return strain
 
