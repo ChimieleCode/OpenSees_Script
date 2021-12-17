@@ -2,9 +2,9 @@ import openseespy.opensees as ops
 
 from ImportFromJson import frame
 from MomentoRotazione import beams,column,edge_column
-from ModelOptions import rigid_joints,rigid_stiffness,use_GM,steel_failure,tendon_failure
+from ModelOptions import rigid_joints,rigid_stiffness,use_GM,steel_failure,tendon_failure,beta
 
-from BasicFunctions.MaterialFunctions import beamS,beamPT,columnS,columnN,jointLink,rigidLink,columnS_MinMax,beamS_MinMax,beamPT_MinMax
+from BasicFunctions.MaterialFunctions import beamS,beamPT,columnS,columnN,rigidLink,columnS_MinMax,beamS_MinMax,beamPT_MinMax,jointInternalLink,jointExternalLink
 from BasicFunctions.NodeFunctions import nodeGrid,nodeRigidBeam,nodePanel,nodeBeam,nodeBase
 
 m = frame.m
@@ -21,21 +21,9 @@ def modelDefineLinks(x):
         'ElasticMultiLinear',
         columnN(n + 1),                             # n + 1 assicura che non sia ne n ne 0, quindi è da intendersi come pilastro interno, se nonesiste tale pilastro, non verrà mai assegnato questo link
         '-strain', 
-        column.multilinearElasticLink.strain[0],
-        column.multilinearElasticLink.strain[1], 
-        column.multilinearElasticLink.strain[2], 
-        column.multilinearElasticLink.strain[3], 
-        column.multilinearElasticLink.strain[4], 
-        column.multilinearElasticLink.strain[5], 
-        column.multilinearElasticLink.strain[6], 
+        *column.multilinearElasticLink.strain, 
         '-stress', 
-        column.multilinearElasticLink.stress[0], 
-        column.multilinearElasticLink.stress[1], 
-        column.multilinearElasticLink.stress[2], 
-        column.multilinearElasticLink.stress[3], 
-        column.multilinearElasticLink.stress[4], 
-        column.multilinearElasticLink.stress[5], 
-        column.multilinearElasticLink.stress[6]
+        *column.multilinearElasticLink.stress
         )
 
     # DEFINISCO LEGAME N COLONNA BORDO
@@ -44,21 +32,9 @@ def modelDefineLinks(x):
         'ElasticMultiLinear',
         columnN(0),                             
         '-strain', 
-        edge_column.multilinearElasticLink.strain[0],
-        edge_column.multilinearElasticLink.strain[1], 
-        edge_column.multilinearElasticLink.strain[2], 
-        edge_column.multilinearElasticLink.strain[3], 
-        edge_column.multilinearElasticLink.strain[4], 
-        edge_column.multilinearElasticLink.strain[5], 
-        edge_column.multilinearElasticLink.strain[6], 
+        *edge_column.multilinearElasticLink.strain,
         '-stress', 
-        edge_column.multilinearElasticLink.stress[0], 
-        edge_column.multilinearElasticLink.stress[1], 
-        edge_column.multilinearElasticLink.stress[2], 
-        edge_column.multilinearElasticLink.stress[3], 
-        edge_column.multilinearElasticLink.stress[4], 
-        edge_column.multilinearElasticLink.stress[5], 
-        edge_column.multilinearElasticLink.stress[6]
+        *edge_column.multilinearElasticLink.stress
         )
 
     # print(f'Material: {columnN()} Proprietà[strain,stress]: {[column.strain[0], column.strain[1], column.strain[2], column.strain[3], column.strain[4], column.strain[5], column.strain[6]], [column.stress[0], column.stress[1], column.stress[2], column.stress[3], column.stress[4], column.stress[5], column.stress[6]]}')
@@ -169,25 +145,9 @@ def modelDefineLinks(x):
             'ElasticMultiLinear', 
             beamPT(j), 
             '-strain', 
-            beams[j].multilinearElasticLink.strain[0], 
-            beams[j].multilinearElasticLink.strain[1], 
-            beams[j].multilinearElasticLink.strain[2], 
-            beams[j].multilinearElasticLink.strain[3], 
-            beams[j].multilinearElasticLink.strain[4], 
-            beams[j].multilinearElasticLink.strain[5], 
-            beams[j].multilinearElasticLink.strain[6], 
-            beams[j].multilinearElasticLink.strain[7], 
-            beams[j].multilinearElasticLink.strain[8], 
+            *beams[j].multilinearElasticLink.strain,
             '-stress', 
-            beams[j].multilinearElasticLink.stress[0], 
-            beams[j].multilinearElasticLink.stress[1], 
-            beams[j].multilinearElasticLink.stress[2], 
-            beams[j].multilinearElasticLink.stress[3], 
-            beams[j].multilinearElasticLink.stress[4], 
-            beams[j].multilinearElasticLink.stress[5], 
-            beams[j].multilinearElasticLink.stress[6],  
-            beams[j].multilinearElasticLink.stress[7], 
-            beams[j].multilinearElasticLink.stress[8]
+            *beams[j].multilinearElasticLink.stress
             )
 
         if tendon_failure:
@@ -204,8 +164,7 @@ def modelDefineLinks(x):
 
         # print(f'Material: {beamPT(j)} Proprietà[strain,stress]: {[beams[j].strain[0], beams[j].strain[1], beams[j].strain[2], beams[j].strain[3], beams[j].strain[4], beams[j].strain[5], beams[j].strain[6]], [beams[j].stress[0], beams[j].stress[1], beams[j].stress[2], beams[j].stress[3], beams[j].stress[4], beams[j].stress[5], beams[j].stress[6]]}')
         
-        
-        if use_GM:
+        if use_GM and beams[j].GMLink != None:
 
             ops.uniaxialMaterial(
                 'Steel02', 
@@ -217,7 +176,7 @@ def modelDefineLinks(x):
                 beams[j].GMLink.cr1,
                 beams[j].GMLink.cr2,
                 )
-            
+                
             if steel_failure:
 
                 ops.uniaxialMaterial(
@@ -231,7 +190,7 @@ def modelDefineLinks(x):
                 )
 
 
-        else:
+        elif beams[j].kineticLink != None:
 
             ops.uniaxialMaterial(
                 'Hardening', 
@@ -241,7 +200,7 @@ def modelDefineLinks(x):
                 beams[j].kineticLink.Hiso, 
                 beams[j].kineticLink.Hkin
                 )
-            
+                
             if steel_failure:
 
                 ops.uniaxialMaterial(
@@ -252,9 +211,10 @@ def modelDefineLinks(x):
                     -beams[j].kineticLink.strainLimit,
                     '-max',
                     beams[j].kineticLink.strainLimit
-                )
+                    )
 
-        # print(f'Material: {beamS(j)} Proprietà[E0,Fy]: {beams[j].E0, beams[j].Fy}')
+            # print(f'Material: {beamS(j)} Proprietà[E0,Fy]: {beams[j].E0, beams[j].Fy}')
+        
 
 
     # DEFINIZIONE DEI LINK DEI NODI SE NON RIGIDI
@@ -262,10 +222,18 @@ def modelDefineLinks(x):
         
         for j in range(1, m + 1):            # j da 1 a m
 
+            # Definisco i nodi esterni
             ops.uniaxialMaterial(
                 'Elastic', 
-                jointLink(j), 
-                (0.85 * 2 * column.h * column.b * beams[j].h * column.timber.G)/3
+                jointExternalLink(j), 
+                (column.h * column.b * beams[j].h * column.timber.G) * 17/30 * (1 - column.h/frame.span)**-1
+                )
+            
+            # Definisco i nodi interni
+            ops.uniaxialMaterial(
+                'Elastic', 
+                jointInternalLink(j), 
+                (column.h * column.b * beams[j].h * column.timber.G) * 17/30 * (1 - column.h/frame.span)**-1 * 2/(2 - beta)
                 )
 
             # ops.uniaxialMaterial('Elastic', jointLink(j), (G_joints * column.h**2 * beams[j].h * frame.storey * (frame.span - column.h) * column.b) * 0.5 / (column.h * frame.storey * (frame.span - column.h) - frame.span * beams[j].h * column.h + column.b * frame.span * (frame.storey - beams[j].h) - frame.storey * column.h * column.b))
@@ -305,41 +273,48 @@ def modelDefineLinks(x):
     # DEFINISCO I LINK DELLE TRAVI PT e S a DX e a SX
     for j in range(1, m + 1):        # j da 1 a m
 
-        for i in range(1, n + 1):           # i da 1 a n
+        if steel_failure:
 
-            if steel_failure:
+            tagS = beamS_MinMax(j)
 
-                tagS = beamS_MinMax(j)
+        else:
 
-            else:
-
-                tagS = beamS(j)
+            tagS = beamS(j)
 
             
-            if tendon_failure:
+        if tendon_failure:
 
-                tagN = beamPT_MinMax(j)
+            tagN = beamPT_MinMax(j)
 
-            else:
+        else:
 
-                tagN = beamPT(j)
+            tagN = beamPT(j)
 
+
+        for i in range(1, n + 1):           # i da 1 a n
 
             ops.element('zeroLength', x, nodeRigidBeam(i, j, 0), nodeBeam(i, j, 0), '-mat', tagN, rigidLink(), rigidLink(), '-dir', 6, 1, 2)     # PT SX
             # print(f'id: {x} nodo i: {nodeRigidBeam(i, j, 0)} nodo j: {nodeBeam(i, j, 0)} Material: {beamPT(j)}')
             x += 1
 
-            ops.element('zeroLength', x, nodeRigidBeam(i, j, 0), nodeBeam(i, j, 0), '-mat', tagS, rigidLink(), rigidLink(), '-dir', 6, 1, 2)      # S  SX
-            # print(f'id: {x} nodo i: {nodeRigidBeam(i, j, 0)} nodo j: {nodeBeam(i, j, 0)} Material: {beamS(j)}')
-            x += 1 
-
             ops.element('zeroLength', x, nodeBeam(i, j, 1), nodeRigidBeam(i, j, 1), '-mat', tagN, rigidLink(), rigidLink(), '-dir', 6, 1, 2)     # PT DX
             # print(f'id: {x} nodo i: {nodeBeam(i, j, 1)} nodo j: {nodeRigidBeam(i, j, 1)} Material: {beamPT(j)}')
             x += 1
 
-            ops.element('zeroLength', x, nodeBeam(i, j, 1), nodeRigidBeam(i, j, 1), '-mat', tagS, rigidLink(), rigidLink(), '-dir', 6, 1, 2)      # S  DX
-            # print(f'id: {x} nodo i: {nodeBeam(i, j, 1)} nodo j: {nodeRigidBeam(i, j, 1)} Material: {beamS(j)}')
-            x += 1
+            try:
+
+                ops.element('zeroLength', x, nodeRigidBeam(i, j, 0), nodeBeam(i, j, 0), '-mat', tagS, rigidLink(), rigidLink(), '-dir', 6, 1, 2)      # S  SX
+                # print(f'id: {x} nodo i: {nodeRigidBeam(i, j, 0)} nodo j: {nodeBeam(i, j, 0)} Material: {beamS(j)}')
+                x += 1
+
+                ops.element('zeroLength', x, nodeBeam(i, j, 1), nodeRigidBeam(i, j, 1), '-mat', tagS, rigidLink(), rigidLink(), '-dir', 6, 1, 2)      # S  DX
+                # print(f'id: {x} nodo i: {nodeBeam(i, j, 1)} nodo j: {nodeRigidBeam(i, j, 1)} Material: {beamS(j)}')
+                x += 1
+
+            except:
+
+                continue
+            
 
     # LINK DEI NODI
     for j in range(1, m + 1):        # j da 1 a m
@@ -348,12 +323,23 @@ def modelDefineLinks(x):
 
             if rigid_joints:
 
+                # Modello i Joint come Rigidi
                 ops.element('zeroLength', x, nodeGrid(i, j), nodePanel(i, j), '-mat', rigidLink(), rigidLink(), rigidLink(), '-dir', 6, 1, 2)
                 # print(f'id: {x} nodo i: {nodeGrid(i, j)} nodo j: {nodePanel(i, j)} Material: {rigidLink()}')
                 x += 1
 
             else:
-            
-                ops.element('zeroLength', x, nodeGrid(i, j), nodePanel(i, j), '-mat', jointLink(j), rigidLink(), rigidLink(), '-dir', 6, 1, 2) 
-                # print(f'id: {x} nodo i: {nodeGrid(i, j)} nodo j: {nodePanel(i, j)} Material: {jointLink(j)}')
-                x += 1
+
+                if i == 0 or i == n:
+                    
+                    # Joint esterni
+                    ops.element('zeroLength', x, nodeGrid(i, j), nodePanel(i, j), '-mat', jointExternalLink(j), rigidLink(), rigidLink(), '-dir', 6, 1, 2) 
+                    # print(f'id: {x} nodo i: {nodeGrid(i, j)} nodo j: {nodePanel(i, j)} Material: {jointLink(j)}')
+                    x += 1
+
+                else:
+                    
+                    # Joint interni
+                    ops.element('zeroLength', x, nodeGrid(i, j), nodePanel(i, j), '-mat', jointInternalLink(j), rigidLink(), rigidLink(), '-dir', 6, 1, 2) 
+                    # print(f'id: {x} nodo i: {nodeGrid(i, j)} nodo j: {nodePanel(i, j)} Material: {jointLink(j)}')
+                    x += 1

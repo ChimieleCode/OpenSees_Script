@@ -16,6 +16,8 @@ n = frame.n
 
 def modelDefineNodes():
 
+    check_nodes = ''
+
     for j in range(m + 1):          # j da 0 a m
 
         for i in range(n + 1):          # i da 0 a n
@@ -74,3 +76,4 @@ def modelDefineNodes():
 
         ops.node(controlNode(), 0, frame.Heff)
         # print(f'nodo: {controlNode()} coordinate[x, y]: {[0, frame.Heff]} ') 
+    

@@ -21,13 +21,13 @@ def modelAssignMasses():
 
                 if i == 0 or i == n:
 
-                    ops.mass(nodeGrid(i, j), frame.mass[j]/(2*n*frame.r), 0, 0)
-                    # print(f'nodo: {nodeGrid(i, j)} Mass: {frame.mass[j]/(2*n*frame.r)}ton')
+                    ops.mass(nodeGrid(i, j), frame.mass[j - 1]/(2*n*frame.r), 0, 0)
+                    # print(f'nodo: {nodeGrid(i, j)} Mass: {frame.mass[j - 1]/(2*n*frame.r)}ton')
 
                 else:
 
-                    ops.mass(nodeGrid(i, j), frame.mass[j]/(n*frame.r), 0, 0)
-                    # print(f'nodo: {nodeGrid(i, j)} Mass: {frame.mass[j]/(n*frame.r)}ton')
+                    ops.mass(nodeGrid(i, j), frame.mass[j - 1]/(n*frame.r), 0, 0)
+                    # print(f'nodo: {nodeGrid(i, j)} Mass: {frame.mass[j - 1]/(n*frame.r)}ton')
 
     except:
 

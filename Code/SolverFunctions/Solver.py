@@ -22,7 +22,7 @@ def steelYielding(initialGuess, section):
 
         return output
 
-    x = fsolve(objectiveYielding, initialGuess, xtol= 10**-6, maxfev=10000)
+    x = fsolve(objectiveYielding, initialGuess, xtol= 10**-3, maxfev=10000)
     # print(x)
     return x
 
@@ -87,11 +87,35 @@ def timberYielding(initialGuess, section):
 
         output.append(stressBalance(theta, neutralAxis, section))
 
-        output.append(timberStrain(theta, neutralAxis) - section.timber.epsilonlim())
+        output.append(timberStrain(theta, neutralAxis, section) - section.timber.epsilonlim(section.kcon))
 
         return output
 
     x = fsolve(objectiveTimber, initialGuess, xtol= 10**-6, maxfev=10000)
+
+    # print(f'Obiettivo: {section.timber.epsilonlim(section.kcon)}')
+    # print(f'Calcolato: {timberStrain(x[0], x[1], section)}')
+
+    # print(x)
+    return x
+
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Point given Theta
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+def computePoint(initialGuess, section, theta):
+
+    def objectiveEquilibrium(input):
+
+        neutralAxis = input[0]
+
+        output = []
+
+        output.append(stressBalance(theta, neutralAxis, section))
+
+        return output
+
+    x = fsolve(objectiveEquilibrium, initialGuess, xtol= 10**-6, maxfev=10000)
     # print(x)
     return x
 
