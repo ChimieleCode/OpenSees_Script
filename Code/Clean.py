@@ -8,6 +8,8 @@ clear_figures = True
 clear_outfiles = True
 clear_cloud = True
 clear_IDA = True
+clear_PP = True
+clear_connectionFragility = True
 
 figures_directories = [
     'Figures\Acc_Envelopes',
@@ -37,6 +39,18 @@ IDA_directories = [
     'Output\IDA\Outputs_Junk'
 ]
 
+PP_directories = [
+    'Output\PerformancePoint'
+]
+
+ConnectionFragility_directories = [
+    'Output\Connection_Fragility\Data\Cloud',
+    'Output\Connection_Fragility\Data\Fragility',
+    'Output\Connection_Fragility\Figures\DS1',
+    'Output\Connection_Fragility\Figures\DS2',
+    'Output\Connection_Fragility\Figures\DST', 
+]
+
 directories = []
 
 if clear_figures:
@@ -54,6 +68,14 @@ if clear_cloud:
 if clear_IDA:
 
     [directories.append(dir) for dir in IDA_directories]
+
+if clear_PP:
+
+    [directories.append(dir) for dir in PP_directories]
+
+if clear_connectionFragility:
+
+    [directories.append(dir) for dir in ConnectionFragility_directories]
 
 # print(directories)
 
