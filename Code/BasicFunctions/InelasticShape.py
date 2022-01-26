@@ -19,7 +19,6 @@ def inelasticShape(frame):
     return shape
 
 
-
 def getEffectiveHeight(frame):
 
     m = frame.m
@@ -27,7 +26,6 @@ def getEffectiveHeight(frame):
     shape = inelasticShape(frame)
 
     mass = frame.mass
-    mass.pop(0)
 
     H = [i * frame.storey for i in range(1, m + 1)]
 
@@ -35,10 +33,24 @@ def getEffectiveHeight(frame):
 
     MDH = [a * b for a,b in zip(MD, H)]
     
-
     Heff = sum(MDH)/sum(MD)
 
     return Heff
 
     
+def getEffectiveMass(frame):
+
+    m = frame.m
+
+    shape = inelasticShape(frame)
+
+    mass = frame.mass
+
+    MD = [a * b for a,b in zip(shape, mass)]
+
+    MD2 = [a * b for a,b in zip(MD, shape)]
+
+    Meff = sum(MD)**2/sum(MD2)
+
+    return Meff
 

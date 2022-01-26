@@ -69,6 +69,7 @@ frame = Frame(
     damping = 0.03
     )
 
+frame.mass.pop(0)  # elimino il termine nullo
 frame.Heff = getEffectiveHeight(frame)
 
 # ---------------------------------------------------------------------------------------------------------------------------

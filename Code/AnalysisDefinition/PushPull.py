@@ -4,7 +4,7 @@ import time
 from ImportFromJson import frame,push_pull
 
 from ControlNode import controlNode
-from BasicFunctions.NodeFunctions import nodeGrid, nodeRigidBeam, nodeBeam
+from BasicFunctions.NodeFunctions import nodeGrid, nodeRigidBeam, nodeBeam, nodeBase
 from ModelOptions import record_section_gaps
 
 
@@ -40,7 +40,7 @@ def runPushoverAnalysis():
 
     if record_section_gaps:
 
-        gap_nodes = []
+        gap_nodes = [nodeGrid(1,0),nodeBase(1)]
 
         for j in range (1, m + 1):           # Scrivo a quali nodi devo settare i recorder al piano eccetto Pian Terreno
 

@@ -10,6 +10,10 @@ global_DCR_DST = []
 global_DCR_DS1 = []
 global_DCR_DS2 = []
 
+demand_capacity_ratio_DS1_matrix = []
+demand_capacity_ratio_DS2_matrix = []
+demand_capacity_ratio_DST_matrix = []
+
 for time_history in time_history_analysis:
 
     gaps = []
@@ -90,8 +94,16 @@ for time_history in time_history_analysis:
     global_DCR_DS2.append([time_history.id, max(demand_capacity_ratio_DS2)])
     global_DCR_DST.append([time_history.id, max(demand_capacity_ratio_DST)])
 
+    demand_capacity_ratio_DS1_matrix.append(demand_capacity_ratio_DS1)
+    demand_capacity_ratio_DS2_matrix.append(demand_capacity_ratio_DS2)
+    demand_capacity_ratio_DST_matrix.append(demand_capacity_ratio_DST)
+
 # print(global_DCR_DS1)
 # print(global_DCR_DS2)
 # print(global_DCR_DST)
+
+# print(demand_capacity_ratio_DS1_matrix)
+# print(demand_capacity_ratio_DS2_matrix)
+# print(demand_capacity_ratio_DST_matrix)
 
 

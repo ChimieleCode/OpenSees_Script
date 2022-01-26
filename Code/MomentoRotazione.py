@@ -12,18 +12,23 @@ for section in sections:
     points = []
     
     # Snervamento Armature
-    points.append(steelYielding([0.005, 0.2], section))
+    points.append(steelYielding([0.005, 0.3], section))
+    # print('Armature S')
 
     # Legno, mi interessa solo theta per ds
-    timberDS.append(timberYielding([0.012, 0.2], section)[0])
+    timberDS.append(timberYielding([0.02, 0.15], section)[0])
+    # print('Timber')
 
     # Fallimento Armature
-    points.append(steelFailure([0.02, 0.1], section))
+    points.append(steelFailure([0.02, 0.2], section))
+    # print('Armature F')
 
     # Snervamento PostTensione [Se Presente]
     if section.tendon != None:
 
         points.append(tendonYielding([0.05, 0.1], section))
+        # print('Trefoli')
+
 
     # Punti aggiuntivi
     delta_theta = (points[1][0] - points[0][0]) / (PT_Points + 1)   # (Theta_s - Thesta_y) / ...

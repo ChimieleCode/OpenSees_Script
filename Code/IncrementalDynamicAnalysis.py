@@ -103,7 +103,9 @@ def incrementalDynamicAnalysis(time_histories = [], structure_periods = []):
 
         # Inizializzo gli array di output
         intensity_measures = [0]
-        demandcapacity_ratios = [0]
+        demandcapacity_ratios_DS1 = [0]
+        demandcapacity_ratios_DS2 = [0]
+        demandcapacity_ratios_DST = [0]
 
         # Calcolo Sa e scalo in maniera che Sa di prima iterazione sia pari a quella definita dall'utente
         unscaledSa = spectralAcceleration(time_history = time_history, structure_period = structure_periods[0])
@@ -119,7 +121,7 @@ def incrementalDynamicAnalysis(time_histories = [], structure_periods = []):
 
 
         # Inizia il loop
-        while (demandcapacity_ratios[-1] < 1) and (step > initialstep * 0.5**maxiterIDA):
+        while ((demandcapacity_ratios_DS1[-1] < 1) or (demandcapacity_ratios_DST[-1] < 1) or (demandcapacity_ratios_DS2[-1] < 1)) and (step > initialstep * 0.5**maxiterIDA):
 
             time_history.serializedid = serializedid
             serializedid += 1
@@ -137,7 +139,9 @@ def incrementalDynamicAnalysis(time_histories = [], structure_periods = []):
 
                 if success:
 
-                    demandcapacity_ratios.append(computeDemandCapacityRatio(time_history)[0])
+                    demandcapacity_ratios_DS1.append(computeDemandCapacityRatio(time_history)[0])
+                    demandcapacity_ratios_DS2.append(computeDemandCapacityRatio(time_history)[1])
+                    demandcapacity_ratios_DST.append(computeDemandCapacityRatio(time_history)[2])
                     intensity_measures.append(spectralAcceleration(time_history = time_history, structure_period = structure_periods[0]))
 
                     time_history.sf = time_history.sf + step
@@ -148,7 +152,9 @@ def incrementalDynamicAnalysis(time_histories = [], structure_periods = []):
 
             else:
 
-                demandcapacity_ratios.append(computeDemandCapacityRatio(time_history)[0])
+                demandcapacity_ratios_DS1.append(computeDemandCapacityRatio(time_history)[0])
+                demandcapacity_ratios_DS2.append(computeDemandCapacityRatio(time_history)[1])
+                demandcapacity_ratios_DST.append(computeDemandCapacityRatio(time_history)[2])
                 intensity_measures.append(spectralAcceleration(time_history = time_history, structure_period = structure_periods[0]))
 
                 time_history.sf = time_history.sf + step
@@ -162,10 +168,11 @@ def incrementalDynamicAnalysis(time_histories = [], structure_periods = []):
 
             for i in range(len(intensity_measures)):
 
-                writer.writerow([intensity_measures[i], demandcapacity_ratios[i]])
+                writer.writerow([intensity_measures[i], demandcapacity_ratios_DS1[i], demandcapacity_ratios_DS2[i], demandcapacity_ratios_DST[i]])
 
+    
 
-import PostProcessing.IDAProcessing
+    import PostProcessing.IDAProcessing
                     
 
 

@@ -32,15 +32,15 @@ def runSingleTimeHistory (time_history = None, structure_periods = []):
 
 
     # Reazioni alla base
-    ops.recorder('Node', '-file', f'Output\IDA\Outputs_Junk\TimeHistory_Base_Reactions.{time_history.id}_{time_history.serializedid}.out', '-time', '-node', *base_nodes, '-dof', 1, 'reaction')
+    # ops.recorder('Node', '-file', f'Output\IDA\Outputs_Junk\TimeHistory_Base_Reactions.{time_history.id}_{time_history.serializedid}.out', '-time', '-node', *base_nodes, '-dof', 1, 'reaction')
     # Spostamenti di piano
-    ops.recorder('Node', '-file', f'Output\IDA\Outputs_Junk\TimeHistory_Storey_Displacement.{time_history.id}_{time_history.serializedid}.out', '-time', '-node', *storey_nodes, '-dof', 1, 'disp')
+    # ops.recorder('Node', '-file', f'Output\IDA\Outputs_Junk\TimeHistory_Storey_Displacement.{time_history.id}_{time_history.serializedid}.out', '-time', '-node', *storey_nodes, '-dof', 1, 'disp')
     # Accelerazione di piano
-    ops.recorder('Node', '-file', f'Output\IDA\Outputs_Junk\TimeHistory_Storey_Acceleration.{time_history.id}_{time_history.serializedid}.out', '-time', '-node', *storey_nodes, '-dof', 1, 'accel')
+    # ops.recorder('Node', '-file', f'Output\IDA\Outputs_Junk\TimeHistory_Storey_Acceleration.{time_history.id}_{time_history.serializedid}.out', '-time', '-node', *storey_nodes, '-dof', 1, 'accel')
     # Velocità di piano
-    ops.recorder('Node', '-file', f'Output\IDA\Outputs_Junk\TimeHistory_Storey_Velocity.{time_history.id}_{time_history.serializedid}.out', '-time', '-node', *storey_nodes, '-dof', 1, 'vel')
+    # ops.recorder('Node', '-file', f'Output\IDA\Outputs_Junk\TimeHistory_Storey_Velocity.{time_history.id}_{time_history.serializedid}.out', '-time', '-node', *storey_nodes, '-dof', 1, 'vel')
     # Spostamento nodo di controllo
-    ops.recorder('Node', '-file', f'Output\IDA\Outputs_Junk\TimeHistory_ControlNode_Displacement.{time_history.id}_{time_history.serializedid}.out', '-time', '-node', controlNode(), '-dof', 1, 'disp')
+    # ops.recorder('Node', '-file', f'Output\IDA\Outputs_Junk\TimeHistory_ControlNode_Displacement.{time_history.id}_{time_history.serializedid}.out', '-time', '-node', controlNode(), '-dof', 1, 'disp')
 
 
     gap_nodes = [nodeGrid(0,0), nodeBase(0), nodeGrid(1,0), nodeBase(1)]
@@ -67,7 +67,7 @@ def runSingleTimeHistory (time_history = None, structure_periods = []):
 
     try:
 
-        T2 = structure_periods[1]
+        T2 = structure_periods[frame.m - 2]
 
     except: # Caso di SDOF
 

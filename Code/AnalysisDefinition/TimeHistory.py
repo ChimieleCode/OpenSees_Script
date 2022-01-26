@@ -73,7 +73,7 @@ def runTimeHistory (time_histories = [], structure_periods = []):
 
         try:
 
-            T2 = structure_periods[1]
+            T2 = structure_periods[frame.m - 2]
 
         except: # Caso di SDOF
 
@@ -95,7 +95,7 @@ def runTimeHistory (time_histories = [], structure_periods = []):
 
         # Parametri TH
         dt = time_history.dt
-        TH_steps = round((time_history.duration + 10 * structure_periods[0]) / dt)
+        TH_steps = round((time_history.duration + 20 * structure_periods[0]) / dt)
 
         ops.timeSeries('Path', time_history.id + 1, '-dt', dt, '-filePath', f'acc_{time_history.id}.txt', '-factor', time_history.sf)
 
